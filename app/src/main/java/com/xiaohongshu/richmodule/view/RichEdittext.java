@@ -27,9 +27,6 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
      */
     private int mNewSelStart, mNewSelEnd;
     private OnRichItemClickedListener mOnRichItemClicked;
-    /**
-     * 原始文本(所有的文本添加、删除操作均在此上面完成)
-     */
     private CharSequence mContentStr = "";
 
     public RichEdittext(Context context) {
@@ -112,7 +109,6 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
      * 先找出字符串中所有话题,取最后一个话题的index,如果index不等于当前光标的位置
      * ,说明当前光标位置前面的字符串不是一个话题
      *
-     * @param str
      * @return
      */
     public boolean startStrEndWithRichItem() {
@@ -333,7 +329,8 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
     /**
      * 插入话题
      *
-     * @param topicBean
+     * @param richKeyword
+     * @param richItem
      */
     public void insertRichItem(String richKeyword, IRichParser richItem) {
 
