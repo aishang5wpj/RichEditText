@@ -16,7 +16,7 @@ import com.xiaohongshu.richmodule.view.RichEdittext;
  * http://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2015/0427/2807.html
  * http://blog.csdn.net/hfut_jf/article/details/49745701
  */
-public class MainActivity extends AppCompatActivity implements RichEdittext.OnRichItemClickedListener {
+public class MainActivity extends AppCompatActivity {
 
     private RichEdittext mEditText;
     private String[] TOPICS = {"湄公河行动", "血钻", "微微一笑很倾城", "大鱼海棠", "从你的全世界路过", "昨日青空", "最好的我们"};
@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity implements RichEdittext.OnRi
         RichParserManager.getManager().registerRichParser(new PoiRichParser());
 
         mEditText = (RichEdittext) findViewById(R.id.edittext);
-        mEditText.setOnRichItemClickedListener(this);
     }
 
     public void addTopic(View view) {
@@ -52,11 +51,6 @@ public class MainActivity extends AppCompatActivity implements RichEdittext.OnRi
 
         int random = (int) (Math.random() * POI.length);
         mEditText.insertRichItem(POI[random], new PoiRichParser());
-    }
-
-    @Override
-    public void onRichItemClicked(String richStr) {
-        t(richStr);
     }
 
     private void t(String text) {
