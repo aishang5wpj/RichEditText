@@ -26,7 +26,6 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
      * 为了避免死循环触发onSelectionChanged(),设置的两个标志变量
      */
     private int mNewSelStart, mNewSelEnd;
-    private OnRichItemClickedListener mOnRichItemClicked;
     private CharSequence mContentStr = "";
 
     public RichEdittext(Context context) {
@@ -61,10 +60,10 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
                 String richItem = RichParserManager.getManager().getLastRichItem(startStr);
                 int lenth = richItem.length();
 
-                //先选中,不直接删除
+                //方案1: 先选中,不直接删除
                 setSelection(startPos - lenth, startPos);
 
-                //删除该话题
+                //方案2: 直接删除该话题
 //                String temp = startStr.substring(0, startStr.length() - lenth);
 //                setText(temp + toString().substring(startPos, toString().length()));
 //                setSelection(temp.length());
@@ -79,9 +78,9 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
      * 判断光标 "后面的" 字符是否是 "话题前缀"
      * 1.字符串以话题前缀开始
      * 2.在该字符串中找得到与之匹配的话题后缀
-     * <p>
+     * <p/>
      * 注意这种是不合法的: " #asdfads #话题# "
-     * <p>
+     * <p/>
      * 先找出字符串中所有话题,取第一个话题的index,如果index不等于当前光标的位置
      * ,说明当前光标位置后面的字符串不是一个话题
      *
@@ -103,9 +102,9 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
      * 判断光标前面是否是一个"话题"
      * 1.字符串结尾是话题后缀
      * 2.在该字符串中找得到与之匹配的话题前缀
-     * <p>
+     * <p/>
      * 注意这种是不合法的: " #话题# asdfads# "
-     * <p>
+     * <p/>
      * 先找出字符串中所有话题,取最后一个话题的index,如果index不等于当前光标的位置
      * ,说明当前光标位置前面的字符串不是一个话题
      *
@@ -135,9 +134,9 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
 
     /**
      * 需要防止光标进入到话题文字内部,话题应该作为一个整体,不可单独选中话题中的某个文字
-     * <p>
+     * <p/>
      * 每次setText()时会触发onSelectionChanged,而且selStart和selEnd都等于0
-     * <p>
+     * <p/>
      * //疑点1:有的手机选中一段文字时往中间挤压之后可以交差反向选中然后扩大,这时候selStart和selEnd的值是什么?
      * //疑点2:双指触控同时改变光标的start和end时,onSelectionChanged是依次回调还是一次性回调同时告知selStart和endStart的改变?
      * //对于疑点2,下面的逻辑暂时只考虑单指触控时的情形
@@ -174,16 +173,6 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
                 setSelection(pos, pos);
                 return;
             }
-//            String clickedRichItem = getClickedRichItem(selStart);
-//            //话题被点击
-//            if (!TextUtils.isEmpty(clickedRichItem)) {
-//                if (null != mOnRichItemClicked) {
-//                    mOnRichItemClicked.onRichItemClicked(clickedRichItem);
-//                }
-//                //不改变位置
-//                setSelection(mOldSelStart, mOldSelEnd);
-//                return;
-//            }
         } else {
             //光标左边往右
             if (mOldSelStart < selStart) {
@@ -292,41 +281,6 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
     }
 
     /**
-     * 掐头去尾,取中间字符串中的富文本
-     *
-     * @param pos
-     * @return 返回被选中的富文本
-     */
-    private String getClickedRichItem(int pos) {
-
-        String text = toString();
-
-        //取前面字符串中最后一个富文本
-        String startStr = text.substring(0, pos);
-        String richStr = RichParserManager.getManager().getLastRichItem(startStr);
-        //start默认指向最前
-        int start = 0;
-        //如果点击的是最前面的话题,则richStr可能为空
-        if (!TextUtils.isEmpty(richStr)) {
-
-            start = startStr.lastIndexOf(richStr) + richStr.length();
-        }
-
-        //取后面字符串中第一个富文本
-        String endStr = text.substring(pos, text.length());
-        richStr = RichParserManager.getManager().getFirstRichItem(endStr);
-        //end默认指向最后
-        int end = text.length();
-        //如果点击的是最后面的话题,则richStr可能为空
-        if (!TextUtils.isEmpty(richStr)) {
-
-            end = startStr.length() + endStr.indexOf(richStr);
-        }
-        String middleStr = text.substring(start, end);
-        return RichParserManager.getManager().getFirstRichItem(middleStr);
-    }
-
-    /**
      * 插入话题
      *
      * @param richKeyword
@@ -370,6 +324,8 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
     protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter);
 
+        //不管是用户删除还是输入文字,都会触发这个方法,每次触发时判断界面上的文字跟记录的文字是否相同,如果不同就
+        //转换成富文本,避免死循环
         if (!TextUtils.equals(mContentStr, text)) {
             mContentStr = text;
             SpannableStringBuilder spannableStr = RichParserManager.getManager().parseRichItems(getContext(), mContentStr.toString());
@@ -380,20 +336,5 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
     @Override
     public String toString() {
         return mContentStr == null ? "" : mContentStr.toString();
-    }
-
-    public void setOnRichItemClickedListener(OnRichItemClickedListener listener) {
-        mOnRichItemClicked = listener;
-    }
-
-    private void t(String text) {
-        final String msg = text;
-        if (!TextUtils.isEmpty(msg)) {
-            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public interface OnRichItemClickedListener {
-        void onRichItemClicked(String richStr);
     }
 }

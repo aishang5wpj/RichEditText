@@ -1,0 +1,11 @@
+    public boolean startStrEndWithRichItem() {
+
+        int startPos = getSelectionStart();
+        final String startStr = toString().substring(0, startPos);
+        if (!RichParserManager.getManager().containsRichItem(startStr)) {
+            return false;
+        }
+
+        String lastTopic = RichParserManager.getManager().getLastRichItem(startStr);
+        return startStr.endsWith(lastTopic);
+    }

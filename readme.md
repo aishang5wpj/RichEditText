@@ -68,7 +68,7 @@
 
 这就涉及到了正则表达式了。不管是话题、at还是poi，我们都要分别给每种富文本定义一个格式，这里用话题来举例。
 
-话题的格式是：一个空格+一个#+话题内容+一个空格，即" #话题 "（引号内即为一个完整的话题，至于为什么话题不像大家平常见到的那样是两个话题，我们稍后再讲）。
+话题的格式是：一个空格+一个#+话题内容+一个空格，即" #话题 "（引号内即为一个完整的话题，至于为什么话题不像大家平常见到的那样是两个"#"，我们稍后再讲）。
 
 定下了话题格式之后，就可以写出正则表达式：" #[^#+] "，表示两个空格中间的字符串是#开头的若干个字符。这里推荐一个[在线正则表达式测试](http://tool.oschina.net/regex/)给大家，非常好用。
 
@@ -355,7 +355,7 @@ public class RichParserManager {
 举个栗子，如果要判断字符串是否包含富文本，外部只需要用下面的代码即可：
 
 ```
-boolean isContains = RichParserManager.getManager().containsRichItem("这个字符串中有一个 #话题 "). containsRichItem();
+boolean isContains = RichParserManager.getManager().containsRichItem("这个字符串中有一个 #话题 ");
 ```
 是不是非常简单？再来看`containsRichItem()`的实现:
 
@@ -374,7 +374,9 @@ public boolean containsRichItem(String str) {
         return false;
     }
 ```
-如你所见，正是遍历所有的`IRichParser`，依次检查是否含有富文本。其他方法类似，不多提了。
+如你所见，正是遍历所有的`IRichParser`，依次检查是否含有富文本，这样既不会在检查每种富文本的时候都写重复的代码，而且也不会遗漏任何对任何一种富文本的检查（只要你一开始调用过`RichParserManager.getInstance().registerRichParser()`注册过）。
+
+其他方法类似，不多提了。
 
 ###话题、AT、POI，以及以后任何可能的富文本样式
 假设现在添加一种“音乐”类型的富文本，则只需要定义一个`MusicRichParser`继承自`AbstractRichParser`，并实现下列3个方法即可：
@@ -430,13 +432,228 @@ public boolean containsRichItem(String str) {
 
 看到这里是不是一切都了然了，所以这里的`&`其实是充当了一个占位符的作用。事实上如果你回过头去看，不管是话题、at还是poi，都有一个占位符。他们分别是`#`、`@`、`&`，只不过at的保留了占位符，而话题的占位符被我替换成了一个透明图片。
 
-为什么要这么做呢？
+调用`getRichSpannable()`得到SpannableString之后，在Edittext中调用setText()就可以将上面所有的更改显示到界面上了。
 
-对于在EditText中图文混排这件事情本身是不困难的，但是现在要支持对一个特定格式的富文本进行正则表达式的判断以及各种处理，特别是光标的控制，假设没有站位符，直接将图片加在文字后面变成富文本，光标移动的时候计算的文字长度仍然是原来的长度，而显示在屏幕上的富文本长度其实是超过了文字的实际长度，所以就有可能出现光标移动时被遮挡等等各种奇怪的bug。
+为什么要采用这种策略呢？
+
+对于在EditText中图文混排这件事情本身是不困难的，但是现在要支持对一个特定格式的富文本进行正则表达式的判断以及各种处理，特别是光标的控制，假设没有占位符，直接将图片加在文字前面变成富文本，光标移动的时候计算的文字长度仍然是原来的长度，而显示在屏幕上的富文本长度其实是超过了文字的实际长度，所以就有可能出现光标移动时被文字或图片遮挡等等各种奇怪的bug。
 
 不知道你们能不能明白，这个需要自己去体会了。
 
 ###RichEditText
+
+上面说了很多，都是针对架构的设计，可能很啰嗦但是如果不讲上面的话下面有的地方可能不好理解，下面讲下`RichEditText`中的实现吧。
+
+<img src='biaoqing/11.jpg' height='150px'/>
+
+####删除事件
+先来看对删除按键的事件监听：
+
+```
+    public RichEdittext(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+
+        setBackgroundColor(Color.WHITE);
+        setOnKeyListener(this);
+    }
+
+    /**
+     * 监听删除按键，执行删除动作
+     */
+    @Override
+    public boolean onKey(View v, int keyCode, KeyEvent event) {
+        //按下键盘时会出发动作，弹起键盘时同样会触发动作
+        if (keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN) {
+
+            if (startStrEndWithRichItem() && getSelectionStart() == getSelectionEnd()) {
+
+                int startPos = getSelectionStart();
+                final String startStr = toString().substring(0, startPos);
+
+                //获取话题,并计算话题长度
+                String richItem = RichParserManager.getManager().getLastRichItem(startStr);
+                int lenth = richItem.length();
+
+                //方案1: 先选中,不直接删除
+                setSelection(startPos - lenth, startPos);
+
+                //方案2: 直接删除该话题
+//                String temp = startStr.substring(0, startStr.length() - lenth);
+//                setText(temp + toString().substring(startPos, toString().length()));
+//                setSelection(temp.length());
+
+                return true;
+            }
+        }
+        return false;
+    }
+```
+
+代码第5行，开启对按键事件的监听，第8~37行，就是重写的`View.OnKeyListener`中的回调方法。
+
+第14行，过滤掉除`删除键按下`以外的事件。
+
+第16行，如果光标前面的字符串是以话题结尾，则进行特殊处理。
+
+第18~19行，截取光标前面的所有字符。
+
+第21~23行，获取上一步截取的字符串中的第一个富文本，并且得到这个富文本的长度。
+
+第25~26行，选中该富文本。
+
+上面是第一种方案，如果不选中富文本直接删除这个话题，如代码28~31。
+
+第33行，返回true表示已经处理了本次删除事件。
+
+第16行`startStrEndWithRichItem()`判断光标前面的字符串是否以话题结尾，源码如下：
+
+```
+    public boolean startStrEndWithRichItem() {
+
+        int startPos = getSelectionStart();
+        final String startStr = toString().substring(0, startPos);
+        if (!RichParserManager.getManager().containsRichItem(startStr)) {
+            return false;
+        }
+
+        String lastTopic = RichParserManager.getManager().getLastRichItem(startStr);
+        return startStr.endsWith(lastTopic);
+    }
+```
+
+第3~4行，先截取光标前面的字符串。
+
+第5~7行，如果字符串中没有富文本，则直接返回false。
+
+第9行，获取字符串中最后面的一个富文本。
+
+然后在第10行判断这个字符串中是否以这个富文本结尾即可。
+
+至此，`删除的时候当光标碰到富文本，可以先选中富文本再按一次删除时就删除，也可以直接把富文本删除`的这个功能就实现了。
+
+<img src='biaoqing/12.jpg' height='150px'/>
+
+####光标移动
+光标移动的场景主要有4个：
+
+- 输入文字时
+- 插入、删除文字时；
+- 用键盘上下左右移动光标；
+- 直接点击输入框，改变光标的文字；
+
+针对所有的光标移动，由于我们只能在光标移动后监听到光标位置的改变，所以我们没有办法在移动光标前决定光标应当移动到哪个位置，只能在光标移动完成后通过`对光标移动后的位置进行判断，并重新调整光标到合适的位置`。
+
+比如如果光标移动后落在富文本中间，则应当调整光标移动到富文本旁边，所以光标的移动用“调整”、“修正”来形容更加贴切一些。
+
+对于上面的4种情况，我们依次来分析。
+
+第1种情况：输入文字时光标自动移动到后一位，不用特殊处理。
+
+第2种情况：插入文字、富文本时，光标要移动一个富文本的长度；删除富文本时，光标也要移动一个富文本的长度。
+
+第3种情况又有两类：
+
+- 光标的开始位置和结束位置相同，移动时只需要判断移动后是否落在富文本中间，如果是则将光标的开始位置和结束位置都移动到富文本旁边；
+
+- 光标的开始位置和结束位置不同，即此时用户已经选中了一段文字，这时候如果对光标的开始位置和结束位置分布进行上下左右的移动，则要对光标的开始位置和结束位置分别进行处理和移动。
+
+第4种情况，其实就是第3种情况中的第1类。
+
+<img src='biaoqing/14.jpeg' height='150px'/>
+
+具体代码大致如下：
+
+```
+    @Override
+    protected void onSelectionChanged(final int selStart, final int selEnd) {
+        super.onSelectionChanged(selStart, selEnd);
+
+        //调用setText()会导致先触发onSelectionChanged()并且start和end均为0,然后才是正确的start和end的值
+        if (0 == selStart && 0 == selEnd) {
+            mOldSelStart = selStart;
+            mOldSelEnd = selEnd;
+            return;
+        }
+
+        //避免下面的setSelection()触发onSelectionChanged()造成死循环
+        if (selStart == mNewSelStart && selEnd == mNewSelEnd) {
+            mOldSelStart = selStart;
+            mOldSelEnd = selEnd;
+            return;
+        }
+
+        int targetStart = selStart, targetEnd = selEnd;
+        String text = toString();
+        //如果用户不是通过左移右移来改变位置,而是直接用手指点击文字使光标的位置发生改变
+        if (selStart == selEnd && Math.abs(selStart - mOldSelStart) > 1) {
+
+            //如果移到了话题内,则改变移动到其他合理的地方
+            int pos = getRecommendSelection(selStart);
+            if (-1 != pos) {
+                setSelection(pos, pos);
+                return;
+            }
+        } else {
+            //光标左边往右
+            if (mOldSelStart < selStart) {
+                //事实上,onSelectionChanged()回调时位置已经改变过了
+                // ,所以当光标左边往右移动时,如果需要判断光标当前位置pos后是否是一个话题时
+                // ,应该判断pos-1时候的位置来判断(或者oldPos,但是oldPos是自己计算出来的,并不一定精准所以)
+                int startPos = selStart - 1;
+                String endStr = text.substring(startPos, text.length());
+                if (RichParserManager.getManager().isStartWithRichItem(endStr)) {
+
+                    String richStr = RichParserManager.getManager().getFirstRichItem(endStr);
+                    targetStart = startPos + richStr.length();
+                }
+            }
+            //光标左边往左
+            else if (mOldSelStart > selStart) {
+
+                int startPos = selStart + 1;
+                //逐个删除文字时,selStart + 1会导致数组越界
+                startPos = startPos < text.length() ? startPos : text.length();
+                String startStr = text.substring(0, startPos);
+                if (RichParserManager.getManager().isEndWithRichItem(startStr)) {
+
+                    String richStr = RichParserManager.getManager().getLastRichItem(startStr);
+                    targetStart = startPos - richStr.length();
+                }
+            }
+
+            //光标右边往右
+            if (mOldSelEnd < selEnd) {
+
+                int endPos = selEnd - 1;
+                String endStr = text.substring(endPos, text.length());
+                if (RichParserManager.getManager().isStartWithRichItem(endStr)) {
+
+                    String richStr = RichParserManager.getManager().getFirstRichItem(endStr);
+                    targetEnd = endPos + richStr.length();
+                }
+            }
+            //光标右边往左
+            else if (mOldSelEnd > selEnd) {
+
+                int endPos = selEnd + 1;
+                String startStr = text.substring(0, endPos);
+                if (RichParserManager.getManager().isEndWithRichItem(startStr)) {
+
+                    String richStr = RichParserManager.getManager().getLastRichItem(startStr);
+                    targetEnd = endPos - richStr.length();
+                }
+            }
+        }
+        //保存旧值
+        mOldSelStart = selStart;
+        mOldSelEnd = selEnd;
+        //保存新值
+        mNewSelStart = targetStart;
+        mNewSelEnd = targetEnd;
+        //更新选中区域
+        setSelection(targetStart, targetEnd);
+    }
+```
 
 ##没解决的bug
 程序大部分功能基本上没有问题，但是删除话题有的时候删不了，因为有个先选中再删除的过程，不知道为什么选中的时候老是选中不了，所以造成删除话题时一直跳过。
@@ -444,3 +661,5 @@ public boolean containsRichItem(String str) {
 解决办法是：去掉先选中再删除的逻辑，当删除时碰到话题，按删除即直接删除整个话题，而不要选中了。
 
 如果解决了bug我会及时更新的。
+
+<img src='biaoqing/13.jpg' height='150px'/>
