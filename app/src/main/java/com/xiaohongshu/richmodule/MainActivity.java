@@ -36,11 +36,11 @@ public class MainActivity extends AppCompatActivity {
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-                .append("话题: #昨日青空 \n")
+                .append("话题: #大鱼海棠 \n")
                 .append("at : @皮城女警凯特琳 \n")
-                .append("poi: &北海 \n")
+                .append("poi: &兰溪 \n")
                 .append("\n")
-                .append("这是一个仿微博的富文本编辑器，可以添加话题，at人，poi等等，实现了富文本边界判断,话题删除等等。\n")
+                .append("这是一个仿微博的富文本编辑器，可以添加话题，at人，poi等等，实现了富文本边界判断，话题删除等等。\n")
                 .append("\n")
                 .append("这是一段测试文字。");
         mEditText.setText(stringBuilder);
