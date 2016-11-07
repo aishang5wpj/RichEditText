@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -62,6 +63,8 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
 
                 //方案1: 先选中,不直接删除
                 setSelection(startPos - lenth, startPos);
+
+                v(String.format("del: (%s,%s)", startPos - lenth, startPos));
 
                 //方案2: 直接删除该话题
 //                String temp = startStr.substring(0, startStr.length() - lenth);
@@ -161,6 +164,8 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
             mOldSelEnd = selEnd;
             return;
         }
+
+        v(String.format("(%s,%s) => (%s,%s)", selStart, selEnd, mNewSelStart, mNewSelEnd));
 
         int targetStart = selStart, targetEnd = selEnd;
         String text = toString();
@@ -336,5 +341,13 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
     @Override
     public String toString() {
         return mContentStr == null ? "" : mContentStr.toString();
+    }
+
+    private void v(String msg) {
+        final String text = msg;
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        Log.v("RichEdittext", text);
     }
 }
