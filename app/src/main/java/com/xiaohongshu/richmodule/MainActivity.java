@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        RichParserManager.getManager().registerRichParser(new TopicRichParser());
+//        RichParserManager.getManager().registerRichParser(new TopicRichParser());
         RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
         RichParserManager.getManager().registerRichParser(new AtRichParser());
         RichParserManager.getManager().registerRichParser(new PoiRichParser());

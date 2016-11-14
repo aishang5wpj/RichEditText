@@ -134,8 +134,8 @@ public class RichEdittext extends EditText implements View.OnKeyListener, SpanWa
     public void setSelection(int start, int stop) {
         if (0 <= start && stop <= getText().toString().length()) {
 
-            mNewSelStart = start;
-            mNewSelEnd = stop;
+//            mNewSelStart = start;
+//            mNewSelEnd = stop;
             super.setSelection(start, stop);
         }
     }
