@@ -2,7 +2,11 @@ package com.xiaohongshu.richmodule.view;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.Selection;
+import android.text.SpanWatcher;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -17,8 +21,9 @@ import com.xiaohongshu.richmodule.bean.RichParserManager;
 /**
  * Created by wupengjian on 16/10/27.
  */
-public class RichEdittext extends EditText implements View.OnKeyListener {
+public class RichEdittext extends EditText implements View.OnKeyListener, SpanWatcher {
 
+    private static final int CHANGE_WATCHER_PRIORITY = 100;
     /**
      * 光标之前的选中位置
      */
@@ -165,7 +170,7 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
             return;
         }
 
-        v(String.format("(%s,%s) => (%s,%s)", selStart, selEnd, mNewSelStart, mNewSelEnd));
+//        v(String.format("(%s,%s) => (%s,%s)", mNewSelStart, mNewSelEnd, selStart, selEnd));
 
         int targetStart = selStart, targetEnd = selEnd;
         String text = toString();
@@ -335,6 +340,10 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
             mContentStr = text;
             SpannableStringBuilder spannableStr = RichParserManager.getManager().parseRichItems(getContext(), mContentStr.toString());
             setText(spannableStr);
+
+            Spannable sp = getText();
+            sp.setSpan(this, 0, getText().length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE |
+                    (CHANGE_WATCHER_PRIORITY << Spanned.SPAN_PRIORITY_SHIFT));
         }
     }
 
@@ -349,5 +358,38 @@ public class RichEdittext extends EditText implements View.OnKeyListener {
             return;
         }
         Log.v("RichEdittext", text);
+    }
+
+    @Override
+    public void onSpanAdded(Spannable text, Object what, int start, int end) {
+
+    }
+
+    @Override
+    public void onSpanRemoved(Spannable text, Object what, int start, int end) {
+
+    }
+
+    @Override
+    public void onSpanChanged(Spannable text, Object what, int ostart, int oend, int nstart, int nend) {
+
+        if (Selection.SELECTION_START.equals(what)) {
+
+            onSpanStartChanged(nstart);
+
+        } else if (Selection.SELECTION_END.equals(what)) {
+
+            onSpanEndChanged(nend);
+        }
+    }
+
+    private void onSpanStartChanged(int start) {
+
+        v(String.format("start: %s", start));
+    }
+
+    private void onSpanEndChanged(int end) {
+
+        v(String.format("end: %s", end));
     }
 }

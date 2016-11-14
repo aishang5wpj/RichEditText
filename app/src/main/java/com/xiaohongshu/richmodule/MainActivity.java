@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.xiaohongshu.richmodule.bean.AtRichParser;
+import com.xiaohongshu.richmodule.bean.NewTopicRichParser;
 import com.xiaohongshu.richmodule.bean.PoiRichParser;
 import com.xiaohongshu.richmodule.bean.RichParserManager;
 import com.xiaohongshu.richmodule.bean.TopicRichParser;
@@ -29,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         RichParserManager.getManager().registerRichParser(new TopicRichParser());
+        RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
         RichParserManager.getManager().registerRichParser(new AtRichParser());
         RichParserManager.getManager().registerRichParser(new PoiRichParser());
 
@@ -43,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
                 .append("这是一个仿微博的富文本编辑器，可以添加话题，at人，poi等等，实现了富文本边界判断，话题删除等等。\n")
                 .append("\n")
                 .append("这是一段测试文字。");
-        mEditText.setText(stringBuilder);
+//        mEditText.setText(stringBuilder);
     }
 
     public void addTopic(View view) {
