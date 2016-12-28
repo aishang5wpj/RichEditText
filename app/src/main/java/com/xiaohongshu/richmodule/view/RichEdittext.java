@@ -67,14 +67,14 @@ public class RichEdittext extends EditText implements View.OnKeyListener, SpanWa
                 int lenth = richItem.length();
 
                 //方案1: 先选中,不直接删除
-                setSelection(startPos - lenth, startPos);
+//                setSelection(startPos - lenth, startPos);
 
                 v(String.format("del: (%s,%s)", startPos - lenth, startPos));
 
                 //方案2: 直接删除该话题
-//                String temp = startStr.substring(0, startStr.length() - lenth);
-//                setText(temp + toString().substring(startPos, toString().length()));
-//                setSelection(temp.length());
+                String temp = startStr.substring(0, startStr.length() - lenth);
+                setText(temp + toString().substring(startPos, toString().length()));
+                setSelection(temp.length());
 
                 return true;
             }

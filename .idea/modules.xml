@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/RichModule.iml" filepath="$PROJECT_DIR$/RichModule.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RichEditText.iml" filepath="$PROJECT_DIR$/RichEditText.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
