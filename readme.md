@@ -8,12 +8,12 @@
 
 在代码中注册需要解析的类型，比如：
 
-```     
-
+```
 RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
-        RichParserManager.getManager().registerRichParser(new AtRichParser());
-        RichParserManager.getManager().registerRichParser(new PoiRichParser());
-        
+
+RichParserManager.getManager().registerRichParser(new AtRichParser());
+
+RichParserManager.getManager().registerRichParser(new PoiRichParser());      
 ```
 
 然后`RichEdittext`就会帮你处理好一切了。
@@ -21,8 +21,7 @@ RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
 如果要插入富文本，可以这样插入：
 
 ```
-        mEditText.insertRichItem("测试", new AtRichParser());
-
+mEditText.insertRichItem("测试", new AtRichParser());
 ```
 
 第一个参数为要插入的内容，第二个参数为要插入的类型，`RichEdittext`会自动将你传入的内容转换成对应的富文本。
@@ -39,10 +38,13 @@ RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
 
 如果解决了bug我会及时更新的，欢迎大神前来指点。
 
-
-
 <b>（2017.1.19日更新，这两个bug均已解决，非常感谢`Panjianan `同学提供的思路 ）
 </b>
+
+##实现过程
+
+详细实现情况博客[仿微博富文本编辑框](http://blog.csdn.net/aishang5wpj/article/details/53065915)
+
 
 关于
 --
