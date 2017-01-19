@@ -66,15 +66,18 @@ public class RichEdittext extends EditText implements View.OnKeyListener, SpanWa
                 String richItem = RichParserManager.getManager().getLastRichItem(startStr);
                 int lenth = richItem.length();
 
+                clearFocus();
+                requestFocus();
+
                 //方案1: 先选中,不直接删除
-//                setSelection(startPos - lenth, startPos);
+                setSelection(startPos - lenth, startPos);
 
                 v(String.format("del: (%s,%s)", startPos - lenth, startPos));
 
                 //方案2: 直接删除该话题
-                String temp = startStr.substring(0, startStr.length() - lenth);
-                setText(temp + toString().substring(startPos, toString().length()));
-                setSelection(temp.length());
+//                String temp = startStr.substring(0, startStr.length() - lenth);
+//                setText(temp + toString().substring(startPos, toString().length()));
+//                setSelection(temp.length());
 
                 return true;
             }
@@ -140,100 +143,32 @@ public class RichEdittext extends EditText implements View.OnKeyListener, SpanWa
         }
     }
 
-    /**
-     * 需要防止光标进入到话题文字内部,话题应该作为一个整体,不可单独选中话题中的某个文字
-     * <p/>
-     * 每次setText()时会触发onSelectionChanged,而且selStart和selEnd都等于0
-     * <p/>
-     * //疑点1:有的手机选中一段文字时往中间挤压之后可以交差反向选中然后扩大,这时候selStart和selEnd的值是什么?
-     * //疑点2:双指触控同时改变光标的start和end时,onSelectionChanged是依次回调还是一次性回调同时告知selStart和endStart的改变?
-     * //对于疑点2,下面的逻辑暂时只考虑单指触控时的情形
-     *
-     * @param selStart
-     * @param selEnd
-     */
     @Override
-    protected void onSelectionChanged(final int selStart, final int selEnd) {
-        super.onSelectionChanged(selStart, selEnd);
+    protected void onSelectionChanged(int selStart, int selEnd) {
+        try {
 
+            selectChanged(selStart, selEnd);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void selectChanged(int selStart, int selEnd) {
         //调用setText()会导致先触发onSelectionChanged()并且start和end均为0,然后才是正确的start和end的值
-        if (0 == selStart && 0 == selEnd) {
+        if (0 == selStart && 0 == selEnd
+                //避免下面的setSelection()触发onSelectionChanged()造成死循环
+                || selStart == mNewSelStart && selEnd == mNewSelEnd) {
             mOldSelStart = selStart;
             mOldSelEnd = selEnd;
             return;
         }
-
-        //避免下面的setSelection()触发onSelectionChanged()造成死循环
-        if (selStart == mNewSelStart && selEnd == mNewSelEnd) {
-            mOldSelStart = selStart;
-            mOldSelEnd = selEnd;
-            return;
-        }
-
-//        v(String.format("(%s,%s) => (%s,%s)", mNewSelStart, mNewSelEnd, selStart, selEnd));
-
-        int targetStart = selStart, targetEnd = selEnd;
-        String text = toString();
-        //如果用户不是通过左移右移来改变位置,而是直接用手指点击文字使光标的位置发生改变
-        if (selStart == selEnd && Math.abs(selStart - mOldSelStart) > 1) {
-
-            //如果移到了话题内,则改变移动到其他合理的地方
-            int pos = getRecommendSelection(selStart);
-            if (-1 != pos) {
-                setSelection(pos, pos);
-                return;
-            }
-        } else {
-            //光标左边往右
-            if (mOldSelStart < selStart) {
-                //事实上,onSelectionChanged()回调时位置已经改变过了
-                // ,所以当光标左边往右移动时,如果需要判断光标当前位置pos后是否是一个话题时
-                // ,应该判断pos-1时候的位置来判断(或者oldPos,但是oldPos是自己计算出来的,并不一定精准所以)
-                int startPos = selStart - 1;
-                String endStr = text.substring(startPos, text.length());
-                if (RichParserManager.getManager().isStartWithRichItem(endStr)) {
-
-                    String richStr = RichParserManager.getManager().getFirstRichItem(endStr);
-                    targetStart = startPos + richStr.length();
-                }
-            }
-            //光标左边往左
-            else if (mOldSelStart > selStart) {
-
-                int startPos = selStart + 1;
-                //逐个删除文字时,selStart + 1会导致数组越界
-                startPos = startPos < text.length() ? startPos : text.length();
-                String startStr = text.substring(0, startPos);
-                if (RichParserManager.getManager().isEndWithRichItem(startStr)) {
-
-                    String richStr = RichParserManager.getManager().getLastRichItem(startStr);
-                    targetStart = startPos - richStr.length();
-                }
-            }
-
-            //光标右边往右
-            if (mOldSelEnd < selEnd) {
-
-                int endPos = selEnd - 1;
-                String endStr = text.substring(endPos, text.length());
-                if (RichParserManager.getManager().isStartWithRichItem(endStr)) {
-
-                    String richStr = RichParserManager.getManager().getFirstRichItem(endStr);
-                    targetEnd = endPos + richStr.length();
-                }
-            }
-            //光标右边往左
-            else if (mOldSelEnd > selEnd) {
-
-                int endPos = selEnd + 1;
-                String startStr = text.substring(0, endPos);
-                if (RichParserManager.getManager().isEndWithRichItem(startStr)) {
-
-                    String richStr = RichParserManager.getManager().getLastRichItem(startStr);
-                    targetEnd = endPos - richStr.length();
-                }
-            }
-        }
+        //校准左边光标
+        int targetStart = getRecommendSelection(selStart);
+        targetStart = targetStart == -1 ? selStart : targetStart;
+        //校准右边光标
+        int targetEnd = getRecommendSelection(selEnd);
+        targetEnd = targetEnd == -1 ? selEnd : targetEnd;
         //保存旧值
         mOldSelStart = selStart;
         mOldSelEnd = selEnd;
