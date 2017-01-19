@@ -8,16 +8,21 @@
 
 在代码中注册需要解析的类型，比如：
 
-```     RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
+```     
+
+RichParserManager.getManager().registerRichParser(new NewTopicRichParser());
         RichParserManager.getManager().registerRichParser(new AtRichParser());
         RichParserManager.getManager().registerRichParser(new PoiRichParser());
+        
 ```
+
 然后`RichEdittext`就会帮你处理好一切了。
 
 如果要插入富文本，可以这样插入：
 
 ```
         mEditText.insertRichItem("测试", new AtRichParser());
+
 ```
 
 第一个参数为要插入的内容，第二个参数为要插入的类型，`RichEdittext`会自动将你传入的内容转换成对应的富文本。
