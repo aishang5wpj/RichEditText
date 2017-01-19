@@ -667,6 +667,10 @@ public boolean containsRichItem(String str) {
 
 如果解决了bug我会及时更新的，欢迎大神前来指点。
 
+--------------
+（2017.1.19日更新，这两个bug均已解决，非常感谢`Panjianan `同学提供的思路 ）
+
+
 <img src='biaoqing/13.jpg' height='150px'/>
 
 关于
