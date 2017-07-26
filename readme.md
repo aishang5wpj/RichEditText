@@ -1,4 +1,5 @@
 #Warnning
+
 RichEditText不推荐使用了，请移步这个项目：https://github.com/aishang5wpj/RichEditTextPro
 
 #前言
